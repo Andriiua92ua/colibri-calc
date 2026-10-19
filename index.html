@@ -1,0 +1,742 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#13213F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Colibri">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>html{-webkit-text-size-adjust:100%}:root{padding-top:env(safe-area-inset-top,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Colibri Auto Прорахунок</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@600;700&display=swap">
+<style>
+/* Layout: form column + live client card (two columns on desktop; stacked on phone with a sticky total bar) */
+:root{
+  --bg:#F3F4F7; --surface:#FFFFFF; --ink:#13213F; --ink-2:#3A4560; --muted:#6B7591;
+  --line:#E0E3EB; --accent:#B8401A; --accent-ink:#FFFFFF; --accent-soft:#F8E8E0; --warn:#B4541A;
+  --navy:#13213F; --coral:#FF8A5B; --total-border:transparent;
+  --display:"Unbounded","Manrope",system-ui,sans-serif;
+  --body:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0D1322; --surface:#151D30; --ink:#E9ECF3; --ink-2:#B9C1D3; --muted:#8590A8;
+  --line:#26304A; --accent:#F2794A; --accent-ink:#1A0A03; --accent-soft:#3A1E14; --warn:#F0A066; --total-border:#FF8A5B; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0D1322; --surface:#151D30; --ink:#E9ECF3; --ink-2:#B9C1D3; --muted:#8590A8;
+  --line:#26304A; --accent:#F2794A; --accent-ink:#1A0A03; --accent-soft:#3A1E14; --warn:#F0A066; --total-border:#FF8A5B; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 104px}
+.wrap,.bottom{max-width:1180px;margin:0 auto}
+.wrap{display:grid;gap:24px;grid-template-columns:minmax(0,1fr)}
+.bottom{margin-top:24px}
+@media (min-width:920px){
+  .wrap{grid-template-columns:minmax(0,1fr) minmax(0,460px);align-items:start}
+  .preview{position:sticky;top:20px}
+  body{padding-bottom:40px}
+  .bar{display:none!important}
+}
+header.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.mark{width:44px;height:44px;border-radius:50%;flex:none}
+h1{font-family:var(--display);font-weight:600;font-size:19px;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h2{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--accent);margin:0;font-weight:800}
+.sub,.hint{color:var(--muted);font-size:13px;margin:0}
+.form{display:flex;flex-direction:column;gap:16px;min-width:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.sec-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.grid2{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--ink-2);font-weight:500;min-width:0}
+input,textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;min-width:0}
+textarea{resize:vertical;font-size:14px}
+input[type=file]{font-size:13px;padding:8px;background:transparent}
+input:focus,textarea:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.money{display:grid;grid-template-columns:minmax(0,1fr) 132px;align-items:center;gap:10px;padding:6px 0;border-bottom:1px dashed var(--line)}
+.money:last-child{border-bottom:0}
+.money .l{font-size:14px;font-weight:600;min-width:0}
+.money small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.money small.warn{color:var(--warn)}
+.money .in{position:relative}
+.money .in span{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+.money input{padding-left:24px;text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.sum{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;background:var(--accent-soft);font-weight:700}
+.sum span{min-width:0;line-height:1.3}
+.sum b{font-family:var(--display);font-size:18px;font-variant-numeric:tabular-nums;white-space:nowrap;flex:none}
+.sum.big{background:var(--navy);color:#FFFFFF;border:2px solid var(--total-border);padding:14px 16px}
+.sum.big b{color:var(--coral);font-size:22px}
+@media (max-width:480px){.sum span{font-size:14px}.sum b{font-size:20px}}
+button{font:inherit;font-weight:700;font-size:15px;border-radius:10px;padding:11px 14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row>button{flex:1 1 auto}
+.msg{font-size:13px;color:var(--ink-2);min-height:1.2em;margin:0}
+.msg.warn{color:var(--warn)}
+.ocr-drop{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 14px;border:1.5px dashed var(--line);border-radius:12px;background:var(--bg);cursor:text}
+.ocr-drop:focus,.ocr-drop.over{border-color:var(--accent);outline:none;background:var(--accent-soft)}
+.ocr-drop.busy{opacity:.7;pointer-events:none}
+.ocr-btn{font-weight:700;font-size:14px;border-radius:10px;padding:9px 12px;background:var(--accent);color:var(--accent-ink);cursor:pointer;white-space:nowrap}
+.money.doubt input{border-color:var(--warn);box-shadow:0 0 0 2px color-mix(in srgb,var(--warn) 30%,transparent)}
+.money.flash input{background:var(--accent-soft);border-color:var(--accent);transition:background .3s}
+.file-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.file-row .f{flex:1}
+details.card{display:block;padding:14px 16px}
+details summary{cursor:pointer;font-weight:700}
+details[open] summary{margin-bottom:12px}
+details .inner{display:flex;flex-direction:column;gap:12px}
+.divider{border-top:1px solid var(--line);padding-top:14px}
+.preview{display:flex;flex-direction:column;gap:12px;min-width:0}
+.canvas-box{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px}
+#card{width:100%;height:auto;display:block;border-radius:8px;box-shadow:0 8px 28px rgba(19,33,63,.16)}
+#txtFallback{min-height:200px}
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--navy);color:#FFFFFF;box-shadow:0 -6px 20px rgba(19,33,63,.25);
+  padding:12px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+  display:flex;align-items:center;justify-content:space-between;gap:12px}
+.bar .t{font-size:12px;color:#C9D2E6;letter-spacing:.02em}
+.bar b{font-family:var(--display);font-size:24px;color:var(--coral);font-variant-numeric:tabular-nums;white-space:nowrap}
+.bar button{background:#FFFFFF;color:var(--navy);border:0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="form">
+    <header class="top">
+      <div class="brand"><img class="mark" id="markImg" alt="Colibri Auto">
+        <div><h1>Прорахунок авто з США</h1><p class="sub">Заповніть поля, картка для клієнта оновлюється сама</p></div></div>
+      <button id="reset" type="button">Новий прорахунок</button>
+    </header>
+
+    <section class="card">
+      <div class="sec-h"><h2>Автомобіль</h2><span class="sub" id="sampleTag">Зараз заповнено прикладом</span></div>
+      <label class="f">Посилання на лот<input id="link" type="url" inputmode="url" autocomplete="off" placeholder="https://www.copart.com/lot/…"></label>
+      <p class="msg" id="linkMsg"></p>
+      <div class="grid2">
+        <label class="f">Марка, модель, рік<input id="car" autocomplete="off" placeholder="2018 Ford Fusion SE"></label>
+        <label class="f">VIN<input id="vin" autocomplete="off" placeholder="необов'язково" autocapitalize="characters"></label>
+      </div>
+      <div class="file-row"><label class="f">Фото авто для картки (виберіть файл або вставте скопійоване фото)<input id="photo" type="file" accept="image/*"></label>
+        <button type="button" id="photoClear" hidden>Прибрати фото</button></div>
+    </section>
+
+    <section class="card">
+      <h2>Дані прорахунку</h2>
+      <div class="ocr" id="ocrBox" hidden>
+        <div class="ocr-drop" id="ocrDrop" tabindex="0" aria-describedby="ocrMsg">
+          <span><b>Lazy Calc</b><br><span class="hint" id="ocrHint">Скрін з логістики: перетягніть сюди або натисніть тут і вставте (Ctrl+V)</span></span>
+          <label class="ocr-btn" for="ocrFile">Мені влом</label>
+          <input id="ocrFile" type="file" accept="image/*" multiple hidden>
+        </div>
+        <p class="msg" id="ocrMsg"></p>
+      </div>
+      <div id="inRows"></div>
+    </section>
+
+    <section class="card">
+      <h2>Підсумок</h2>
+      <p class="hint" id="autoLine"></p>
+      <div class="sum"><span>Разом з розмитненням, без ремонту</span><b id="sub1">$0</b></div>
+      <div class="sum big"><span>Загальна вартість у Києві</span><b id="total">$0</b></div>
+    </section>
+  </div>
+
+  <aside class="preview" id="previewBox">
+    <div class="canvas-box"><canvas id="card" width="1080" height="1600" aria-label="Картка прорахунку для клієнта"></canvas></div>
+    <div class="row">
+      <button type="button" class="primary" id="copy">Скопіювати текст</button>
+      <button type="button" class="primary" id="copyImg">Скопіювати картинку</button>
+    </div>
+    <div class="row">
+      <button type="button" id="png">Зберегти PNG</button>
+      <button type="button" id="pdf">Зберегти PDF</button>
+    </div>
+    <p class="msg" id="outMsg"></p>
+    <textarea id="txtFallback" hidden readonly aria-label="Текст прорахунку"></textarea>
+  </aside>
+</div>
+
+<div class="bottom">
+  <details class="card" id="settings">
+    <summary>Налаштування</summary>
+    <div class="inner">
+      <h2>Постійні витрати</h2>
+      <p class="hint">Зберігаються на цьому пристрої й рахуються в кожному прорахунку автоматично.</p>
+      <div class="grid2">
+        <label class="f">Комплекс послуг за замовчуванням, $<input id="d_colibri" inputmode="decimal"></label>
+        <label class="f">Експедитор, $<input id="d_exp" inputmode="decimal"></label>
+        <label class="f">Комісія SWIFT, %<input id="d_swiftPct" inputmode="decimal"></label>
+        <label class="f">Доставка Клайпеда → Київ, $<input id="d_kyiv" inputmode="decimal"></label>
+        <label class="f">Сертифікація, $<input id="d_cert" inputmode="decimal"></label>
+      </div>
+      <p class="hint">SWIFT рахується від суми: ставка + збір + доставка США → Клайпеда + експедитор.</p>
+
+      <h2>МРЕО</h2>
+      <p class="hint">МРЕО = (ставка + збір + надбавка митниці) × відсоток + фіксована сума. Відсоток залежить від цієї ціни.</p>
+      <div class="grid2">
+        <label class="f">Надбавка митниці, $<input id="d_mAdd" inputmode="decimal"></label>
+        <label class="f">Фіксована сума, $<input id="d_mFix" inputmode="decimal"></label>
+        <label class="f">Поріг 1, $<input id="d_mT1" inputmode="decimal"></label>
+        <label class="f">До порогу 1, %<input id="d_mP1" inputmode="decimal"></label>
+        <label class="f">Поріг 2, $<input id="d_mT2" inputmode="decimal"></label>
+        <label class="f">До порогу 2, %<input id="d_mP2" inputmode="decimal"></label>
+        <label class="f">Понад поріг 2, %<input id="d_mP3" inputmode="decimal"></label>
+      </div>
+
+      <h2>Бренд</h2>
+      <div class="grid2">
+        <label class="f">Назва компанії<input id="d_brand"></label>
+        <label class="f">Підпис під назвою<input id="d_tag"></label>
+      </div>
+      <label class="f">Контакти на картці (кожен з нового рядка)<textarea id="d_contacts" rows="6"></textarea></label>
+      <div class="file-row"><label class="f">Логотип (PNG або JPG)<input id="logoFile" type="file" accept="image/*"></label>
+        <button type="button" id="logoReset">Стандартний логотип</button></div>
+
+      <div class="row divider"><button type="button" id="resetSettings">Скинути до базових</button></div>
+      <p class="msg" id="resetMsg">Повертає всі суми, формулу МРЕО, контакти й логотип до затверджених значень.</p>
+    </div>
+  </details>
+</div>
+
+<div class="bar"><div><div class="t">Вартість у Києві</div><b id="barTotal">$0</b></div>
+  <button type="button" id="toCard">До картки ↓</button></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+(() => {
+"use strict";
+const $ = id => document.getElementById(id);
+
+/* ---------- storage (per device) ---------- */
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
+};
+
+/* ---------- approved defaults ---------- */
+const LOGO_SRC = "logo.png";
+const DEF = {
+  brand: "Colibri Auto", tag: "Авто з США під ключ",
+  contacts: "Контакти для замовлення:\n+380 63 873 10 20 — Вячеслав\n+380 63 361 21 40 — Андрій\nInstagram: instagram.com/colibri.auto.ua\nTelegram: t.me/Colibri_Auto\nTikTok: tiktok.com/@colibri.auto",
+  colibri: 500, exp: 350, swiftPct: 3, kyiv: 950, cert: 280,
+  mAdd: 1600, mFix: 30, mT1: 10684, mT2: 18778, mP1: 3, mP2: 4, mP3: 5
+};
+const TEXT_KEYS = ["brand", "tag", "contacts"];
+const NUM_KEYS = Object.keys(DEF).filter(k => !TEXT_KEYS.includes(k));
+let S = (() => {
+  const legacy = store.get("ca_settings", null);
+  const saved = store.get("ca_settings2", legacy ? { brand: legacy.brand, tag: legacy.tag, contacts: legacy.contacts } : {});
+  return Object.assign({}, DEF, saved);
+})();
+const saveSettings = () => store.set("ca_settings2", S);
+
+/* ---------- numbers ---------- */
+const num = s => { const v = parseFloat(String(s ?? "").replace(/[\s  $]/g, "").replace(",", ".")); return isFinite(v) ? v : 0; };
+const r2 = x => Math.round(x * 100) / 100;
+const NF0 = new Intl.NumberFormat("uk-UA", { maximumFractionDigits: 0 });
+const NF2 = new Intl.NumberFormat("uk-UA", { maximumFractionDigits: 2 });
+const fmt = (v, whole) => "$" + (whole ? NF0 : NF2).format(whole ? Math.round(v) : r2(v)).replace(/[  ]/g, " ");
+const pct = x => String(x).replace(".", ",") + "%";
+const show = v => String(v).replace(".", ",");
+
+/* ---------- inputs per calculation ---------- */
+const INPUTS = [
+  { k: "bid", l: "Ставка" },
+  { k: "lot", l: "Ставка + збір", note: true },
+  { k: "ship", l: "Доставка з США", note: "до Клайпеди, зі страхуванням" },
+  { k: "customs", l: "Митні платежі" },
+  { k: "colibri", l: "Комплекс послуг", note: true }
+];
+$("inRows").innerHTML = INPUTS.map(r => `<div class="money"><div class="l">${r.l}${r.note ? `<small id="n_${r.k}">${typeof r.note === "string" ? r.note : ""}</small>` : ""}</div>
+  <div class="in"><span>$</span><input id="v_${r.k}" inputmode="decimal" autocomplete="off" aria-label="${r.l}, долари"></div></div>`).join("");
+const getv = k => num($("v_" + k).value);
+const setv = (k, v) => { $("v_" + k).value = v === "" || v == null ? "" : show(v); };
+
+/* ---------- lines shown to the client (order matters) ---------- */
+const MAIN = [
+  { k: "bid", l: "Ставка" },
+  { k: "fee", l: "Аукціонний збір" },
+  { k: "ship", l: "Доставка США → Клайпеда", text: "Доставка США → Клайпеда (зі страхуванням)", note: "включно зі страхуванням 0.9% від ставки" },
+  { k: "colibri", l: () => "Комплекс послуг " + S.brand },
+  { k: "exp", l: "Експедитор" },
+  { k: "customs", l: "Митні платежі" },
+  { k: "swift", l: "Комісія SWIFT-переказу", text: "Комісія SWIFT" },
+  { k: "kyiv", l: "Доставка Клайпеда → Київ" }
+];
+const EXTRA = [{ k: "cert", l: "Сертифікація" }, { k: "mreo", l: "МРЕО" }];
+const label = (r, forText) => (forText && r.text) || (typeof r.l === "function" ? r.l() : r.l);
+
+/* ---------- calculation ---------- */
+function calc() {
+  const v = {};
+  INPUTS.forEach(r => v[r.k] = getv(r.k));
+  v.fee = v.bid && v.lot > v.bid ? r2(v.lot - v.bid) : 0;
+  v.exp = S.exp; v.kyiv = S.kyiv; v.cert = S.cert;
+  v.swift = Math.round((S.swiftPct || 0) / 100 * (v.bid + v.fee + v.ship + v.exp));
+  const base = v.bid ? v.bid + v.fee : v.lot;            // ставка + збір
+  v.cval = base ? base + S.mAdd : 0;                      // ціна для митниці
+  v.mPct = v.cval <= S.mT1 ? S.mP1 : v.cval <= S.mT2 ? S.mP2 : S.mP3;
+  v.mreo = v.cval ? Math.round(v.cval * v.mPct / 100 + S.mFix) : 0;
+  v.sub1 = MAIN.reduce((a, r) => a + v[r.k], 0);
+  v.total = v.sub1 + EXTRA.reduce((a, r) => a + v[r.k], 0);
+  return v;
+}
+
+let drawTimer = null;
+function update() {
+  const v = calc();
+  const n = $("n_lot");
+  if (v.lot && !v.bid) { n.className = "warn"; n.textContent = "Введіть ставку, щоб порахувати збір"; }
+  else if (v.lot && v.lot < v.bid) { n.className = "warn"; n.textContent = "Сума менша за ставку — перевірте"; }
+  else { n.className = ""; n.textContent = v.fee ? "Збір аукціону: " + fmt(v.fee) : "Збір порахується автоматично"; }
+  $("n_colibri").textContent = S.brand + " · за замовчуванням " + fmt(S.colibri);
+  $("autoLine").textContent = "Рахується автоматично: SWIFT " + pct(S.swiftPct) + " · Клайпеда → Київ " + fmt(v.kyiv) +
+    " · сертифікація " + fmt(v.cert) + " · МРЕО " + (v.cval ? pct(v.mPct) : "за формулою");
+  $("sub1").textContent = fmt(v.sub1, true);
+  $("total").textContent = $("barTotal").textContent = fmt(v.total, true);
+  clearTimeout(drawTimer); drawTimer = setTimeout(draw, 120);
+}
+
+/* ---------- new calculation ---------- */
+const SAMPLE = { car: "2018 Ford Fusion SE", bid: 9400, lot: 10530, ship: 1334, customs: 5098 };
+let photoImg = null, logoImg = null;
+function newCalc(sample) {
+  $("car").value = sample ? SAMPLE.car : "";
+  $("vin").value = ""; $("link").value = ""; $("linkMsg").textContent = "";
+  ["bid", "lot", "ship", "customs"].forEach(k => setv(k, sample ? SAMPLE[k] : ""));
+  setv("colibri", S.colibri);
+  clearPhoto(false);
+  $("ocrMsg").textContent = ""; document.querySelectorAll(".money.doubt").forEach(r => r.classList.remove("doubt"));
+  $("sampleTag").hidden = !sample;
+  update();
+}
+
+/* ---------- auction link ---------- */
+const STATES = new Set("al ak az ar ca co ct de fl ga hi id il in ia ks ky la me md ma mi mn ms mo mt ne nv nh nj nm ny nc nd oh ok or pa ri sc sd tn tx ut vt va wa wv wi wy dc on qc ab bc ns nb mb sk".split(" "));
+function niceWord(w) {
+  const l = w.toLowerCase();
+  if (l === "mercedes") return "Mercedes-Benz";
+  if (/^[a-z]{1,3}\d*$|^\d+[a-z]*$/.test(l) || ["bmw", "gmc", "kia", "amg", "awd", "fwd", "rwd", "4wd"].includes(l)) return l.toUpperCase();
+  return l[0].toUpperCase() + l.slice(1);
+}
+const lotUrl = () => { const m = $("link").value.match(/https?:\/\/\S+/i); return m ? m[0].replace(/[).,]+$/, "") : ""; };
+function parseLink() {
+  const t = $("link").value.trim(), msg = $("linkMsg");
+  msg.className = "msg"; msg.textContent = "";
+  if (!t) return;
+  const cm = t.match(/copart\.[a-z.]+\/lot\/\d+\/([a-z0-9-]+)/i);
+  if (cm) {
+    const parts = cm[1].toLowerCase().split("-");
+    const yi = parts.findIndex(p => /^(19|20)\d{2}$/.test(p));
+    if (yi >= 0) {
+      let rest = parts.slice(yi + 1);
+      const si = rest.findIndex((p, i) => i >= 2 && STATES.has(p));
+      if (si > 0) rest = rest.slice(0, si);
+      $("car").value = [parts[yi], ...rest.map(niceWord)].join(" ").replace("Mercedes-Benz Benz", "Mercedes-Benz");
+      $("sampleTag").hidden = true;
+      msg.textContent = "Назву підставлено з посилання. Перевірте.";
+      update(); return;
+    }
+  }
+  if (/iaai\./i.test(t)) { msg.className = "msg warn"; msg.textContent = "У посиланнях IAAI немає назви авто — впишіть її вручну. Посилання додасться до тексту."; return; }
+  if (!/^https?:/i.test(t)) { msg.className = "msg warn"; msg.textContent = "Це не схоже на посилання. Вставте адресу сторінки лоту."; return; }
+  msg.textContent = "Посилання додасться до тексту. Назву впишіть вручну.";
+}
+
+/* ---------- logistics screenshot: parser ---------- */
+// The logistics site prints values like "1357$"; OCR often reads that "$" as one more digit,
+// so each value is checked against a plausible range and the trailing character dropped when needed.
+function parseLogistics(text) {
+  const t = text.replace(/\r/g, "").replace(/[зЗ](?=\d)/g, "3").replace(/(?<=\d)[OoОо](?=\d)/g, "0");
+  const out = {};
+  // value = first number on the label's own line (or the next line if OCR split it); never a number in brackets like "(2027)"
+  const tok = re => {
+    const m = re.exec(t); if (!m) return null;
+    const lines = t.slice(m.index + m[0].length).split("\n");
+    for (const line of lines.slice(0, 2)) {
+      const seg = line.replace(/(?<=\d)[OoОо]|[OoОо](?=\d)/g, "0").replace(/(?<=\d)б|б(?=\d)/g, "6");
+      const n = /(^|[^(\d])(\d+)\s?([$%S§]?)(?!\d|\))/.exec(seg);
+      if (n) return { d: n[2], dollar: !!n[3] };
+      if (/\S/.test(line)) break;
+    }
+    return null;
+  };
+  const pick = (tk, ok) => {
+    if (!tk) return undefined;
+    const raw = +tk.d, cut = tk.d.length > 1 ? +tk.d.slice(0, -1) : NaN;
+    if (tk.dollar) return raw;
+    if (ok(cut)) return cut;
+    if (ok(raw)) return raw;
+    return cut || raw;
+  };
+  const lotIdx = t.search(/лоту\s*з[іi]\s*збор/i);
+  if (lotIdx > 0) { const all = [...t.slice(Math.max(0, lotIdx - 200), lotIdx).matchAll(/(?:\$\s?|[5S§]\s)(\d{3,7})\b/g)]; if (all.length) out.bid = +all[all.length - 1][1]; }
+  const bid = out.bid || getv("bid");
+  out.lot = pick(tok(/лоту\s*з[іi]\s*збор\S*/i), v => v >= 100 && (!bid || (v >= bid && v <= bid * 1.6 + 2500)));
+  out.ship = pick(tok(/доставки\s*до\s*порту\S*/i), v => v >= 300 && v <= 4000 + bid * 0.02);
+  const base = out.lot || bid;
+  out.customs = pick(tok(/(?:сума\s*митних|митних\s+платеж)\S*(?:\s+платеж\S*)?/i), v => v >= 0 && (!base || v <= base * 1.2 + 6000));
+  Object.keys(out).forEach(k => out[k] == null && delete out[k]);
+  return out;
+}
+
+/* ---------- logistics screenshot: recognition (hosting only, runs on the device) ---------- */
+const OCR_LIB = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
+let ocrWorker = null;
+const ocrSay = (t, warn) => { const m = $("ocrMsg"); m.className = "msg" + (warn ? " warn" : ""); m.textContent = t; };
+function loadScript(src) { return new Promise((res, rej) => { const sc = document.createElement("script"); sc.src = src; sc.onload = res; sc.onerror = () => rej(new Error("load")); document.head.appendChild(sc); }); }
+async function getWorker() {
+  if (ocrWorker) return ocrWorker;
+  if (!window.Tesseract) await loadScript(OCR_LIB);
+  ocrWorker = await window.Tesseract.createWorker(["eng", "ukr"], 1, {
+    langPath: new URL("tessdata", location.href).href, gzip: false,
+    logger: m => { if (m.status === "recognizing text") ocrSay("Розпізнаю… " + Math.round(m.progress * 100) + "%"); else if (/load/.test(m.status)) ocrSay("Завантажую розпізнавання (лише перший раз)…"); }
+  });
+  return ocrWorker;
+}
+// light text on a dark theme → dark text on white: grayscale by brightest channel (red digits stay dark),
+// smooth upscale, then a hard threshold. Two settings are read and compared, because single OCR passes
+// occasionally drop or swap a digit on this font.
+const PASSES = [{ scale: 2, thr: 120 }, { scale: 1.5, thr: 150 }, { scale: 1, thr: 128 }];
+// all resampling is done here in plain JS so results are the same in Safari, Chrome and on any phone
+function grayOf(img) {
+  const w = img.width, h = img.height, cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+  const ctx = cv.getContext("2d"); ctx.drawImage(img, 0, 0);
+  const d = ctx.getImageData(0, 0, w, h).data, g = new Uint8Array(w * h); let sum = 0;
+  for (let i = 0, j = 0; j < g.length; i += 4, j++) { const m = Math.max(d[i], d[i + 1], d[i + 2]); g[j] = m; sum += m; }
+  if (sum / g.length < 128) for (let j = 0; j < g.length; j++) g[j] = 255 - g[j];
+  return { g, w, h };
+}
+function prepImage({ g, w: w0, h: h0 }, { scale, thr }) {
+  scale = Math.min(scale, 3000 / w0);
+  const w = Math.round(w0 * scale), h = Math.round(h0 * scale);
+  const out = document.createElement("canvas"); out.width = w; out.height = h;
+  const o = out.getContext("2d"), id = o.createImageData(w, h), d = id.data;
+  for (let y = 0; y < h; y++) {
+    const sy = Math.min(h0 - 1, (y + 0.5) / scale - 0.5), y0 = Math.max(0, Math.floor(sy)), y1 = Math.min(h0 - 1, y0 + 1), fy = Math.max(0, sy - y0);
+    for (let x = 0; x < w; x++) {
+      const sx = Math.min(w0 - 1, (x + 0.5) / scale - 0.5), x0 = Math.max(0, Math.floor(sx)), x1 = Math.min(w0 - 1, x0 + 1), fx = Math.max(0, sx - x0);
+      const top = g[y0 * w0 + x0] * (1 - fx) + g[y0 * w0 + x1] * fx, bot = g[y1 * w0 + x0] * (1 - fx) + g[y1 * w0 + x1] * fx;
+      const v = top * (1 - fy) + bot * fy < thr ? 0 : 255, i = (y * w + x) * 4;
+      d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255;
+    }
+  }
+  o.putImageData(id, 0, 0); return out;
+}
+const fileToImg = f => new Promise((res, rej) => { const u = URL.createObjectURL(f); const i = new Image(); i.onload = () => { URL.revokeObjectURL(u); res(i); }; i.onerror = rej; i.src = u; });
+const OCR_NAMES = { bid: "ставка", lot: "ставка + збір", ship: "доставка з США", customs: "митні платежі" };
+async function recognizeShots(files) {
+  files = [...files].filter(f => f && f.type.startsWith("image/")); if (!files.length) return;
+  const box = $("ocrDrop"); box.classList.add("busy");
+  try {
+    const worker = await getWorker(), found = {}, unsure = new Set();
+    for (const f of files) {
+      const gray = grayOf(await fileToImg(f)), reads = [];
+      for (const [i, pass] of PASSES.entries()) {
+        if (i === 2) { const agree = Object.keys(OCR_NAMES).every(k => reads[0][k] != null && reads[0][k] === reads[1][k]); if (agree) break; }
+        const { data } = await worker.recognize(prepImage(gray, pass));
+        reads.push(parseLogistics(data.text)); window.colibriLastOcr = data.text;
+      }
+      for (const k of Object.keys(OCR_NAMES)) {
+        if (found[k] != null) continue;
+        const vals = reads.map(r => r[k]).filter(v => v != null);
+        if (!vals.length) continue;
+        const counts = new Map(); vals.forEach(v => counts.set(v, (counts.get(v) || 0) + 1));
+        const [best, n] = [...counts].sort((a, b) => b[1] - a[1])[0];
+        found[k] = best;
+        if (n < 2 && reads.length > 1) unsure.add(k);
+      }
+    }
+    const keys = Object.keys(OCR_NAMES).filter(k => found[k] != null);
+    if (!keys.length) { ocrSay("Не знайшов цифр на скріні. Перевірте, що на ньому видно ціну лоту, доставку й митні платежі.", true); return; }
+    document.querySelectorAll(".money.doubt").forEach(r => r.classList.remove("doubt"));
+    keys.forEach(k => { setv(k, found[k]); const row = $("v_" + k).closest(".money"); row.classList.add("flash"); setTimeout(() => row.classList.remove("flash"), 1800); });
+    $("sampleTag").hidden = true; update();
+    const missing = Object.keys(OCR_NAMES).filter(k => found[k] == null).map(k => OCR_NAMES[k]);
+    const doubt = keys.filter(k => unsure.has(k));
+    doubt.forEach(k => $("v_" + k).closest(".money").classList.add("doubt"));
+    ocrSay("Підставлено: " + keys.map(k => OCR_NAMES[k] + " " + fmt(found[k])).join(", ") + "." +
+      (doubt.length ? " Обов'язково перевірте: " + doubt.map(k => OCR_NAMES[k]).join(", ") + " (виділено)." : " Перевірте цифри.") +
+      (missing.length ? " Не знайдено: " + missing.join(", ") + "." : ""), doubt.length > 0);
+  } catch (e) {
+    ocrSay("Не вдалося розпізнати скрін. Перевірте інтернет і спробуйте ще раз.", true);
+  } finally { box.classList.remove("busy"); }
+}
+
+/* ---------- client text for Telegram ---------- */
+function clientText() {
+  const v = calc(), L = [];
+  const car = $("car").value.trim(), vin = $("vin").value.trim().toUpperCase();
+  if (car) L.push("🚗 " + car);
+  if (vin) L.push("VIN: " + vin);
+  L.push("🔑 Під ключ у Києві: " + fmt(v.total, true) + " (без ремонту)", "");
+  MAIN.forEach(r => { if (v[r.k]) L.push(label(r, true) + ": " + fmt(v[r.k])); });
+  L.push("————————————", "Разом з розмитненням (без ремонту): " + fmt(v.sub1, true));
+  const ex = EXTRA.filter(r => v[r.k]);
+  if (ex.length) { L.push("", "Додатково:"); ex.forEach(r => L.push(r.l + ": " + fmt(v[r.k]))); }
+  L.push("————————————", "ЗАГАЛЬНА ВАРТІСТЬ У КИЄВІ: " + fmt(v.total, true));
+  const url = lotUrl(); if (url) L.push("", "🔗 " + url);
+  return L.join("\n");
+}
+
+/* ---------- client card (canvas) ---------- */
+const C = { ink: "#13213F", ink2: "#3A4560", muted: "#6E7894", paper: "#F7F6F3", line: "#E4E2DD", accent: "#B8401A", coral: "#FF8A5B", soft: "#F8E8E0", white: "#FFFFFF", pale: "#A9B4CF" };
+const DISP = '"Unbounded","Manrope",sans-serif', BODY = '"Manrope",sans-serif';
+const W = 1080, P = 64;
+function rr(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function spacing(ctx, px) { if ("letterSpacing" in ctx) ctx.letterSpacing = px + "px"; }
+function wrapText(ctx, text, maxW) {
+  const lines = []; let cur = "";
+  text.split(/\s+/).forEach(w => { const t = cur ? cur + " " + w : w; if (ctx.measureText(t).width > maxW && cur) { lines.push(cur); cur = w; } else cur = t; });
+  if (cur) lines.push(cur); return lines;
+}
+function text(ctx, str, x, y, font, color, align) { ctx.font = font; ctx.fillStyle = color; ctx.textAlign = align || "left"; ctx.fillText(str, x, y); ctx.textAlign = "left"; }
+
+// dry=true only measures height
+function renderCard(ctx, dry) {
+  const v = calc(); let y;
+  const D = fn => { if (!dry) fn(); };
+  ctx.textBaseline = "alphabetic";
+  // header
+  D(() => {
+    ctx.fillStyle = C.ink; ctx.fillRect(0, 0, W, 200);
+    let x = P;
+    if (logoImg) { const h = 128, w = Math.min(300, logoImg.width * (h / logoImg.height)); ctx.drawImage(logoImg, P, 36, w, h); x = P + w + 24; }
+    text(ctx, S.brand, x, 104, "700 38px " + DISP, C.white);
+    text(ctx, S.tag, x, 142, "500 24px " + BODY, C.pale);
+    text(ctx, "Прорахунок від " + new Date().toLocaleDateString("uk-UA"), W - P, 104, "500 22px " + BODY, C.pale, "right");
+    ctx.fillStyle = C.paper; ctx.fillRect(0, 200, W, ctx.canvas.height - 200);
+  });
+  y = 200;
+  // title + VIN
+  const car = $("car").value.trim(), vin = $("vin").value.trim().toUpperCase();
+  if (car || vin) {
+    y += 72;
+    if (car) {
+      ctx.font = "700 48px " + DISP; spacing(ctx, -0.5);
+      wrapText(ctx, car, W - 2 * P).slice(0, 3).forEach(l => { D(() => { ctx.fillStyle = C.ink; ctx.fillText(l, P, y); }); y += 60; });
+      spacing(ctx, 0); y -= 10;
+    } else y -= 30;
+    if (vin) { D(() => text(ctx, "VIN " + vin, P, y, "500 26px " + BODY, C.muted)); y += 40; }
+    y += 12;
+  } else y += 64;
+  // photo
+  if (photoImg) {
+    const pw = W - 2 * P, ph = Math.round(pw * 0.58);
+    D(() => {
+      ctx.save(); rr(ctx, P, y, pw, ph, 24); ctx.clip();
+      const s = Math.max(pw / photoImg.width, ph / photoImg.height), iw = photoImg.width * s, ih = photoImg.height * s;
+      ctx.drawImage(photoImg, P + (pw - iw) / 2, y + (ph - ih) / 2, iw, ih); ctx.restore();
+    });
+    y += ph + 44;
+  }
+  const section = t => { D(() => { ctx.font = "800 22px " + BODY; spacing(ctx, 3); ctx.fillStyle = C.accent; ctx.fillText(t.toUpperCase(), P, y); spacing(ctx, 0); }); y += 26; };
+  const row = (l, note, val, last) => {
+    const h = note ? 84 : 68, base = y + (note ? 36 : 42);
+    D(() => {
+      text(ctx, l, P, base, "600 29px " + BODY, C.ink2);
+      if (note) text(ctx, note, P, y + 66, "500 21px " + BODY, C.muted);
+      text(ctx, fmt(val), W - P, base, "700 31px " + BODY, C.ink, "right");
+      if (!last) { ctx.fillStyle = C.line; ctx.fillRect(P, y + h - 1, W - 2 * P, 2); }
+    });
+    y += h;
+  };
+  // main lines
+  section("Розрахунок");
+  const main = MAIN.filter(r => v[r.k]);
+  main.forEach((r, i) => row(label(r), r.note || "", v[r.k], i === main.length - 1));
+  y += 20;
+  // subtotal
+  D(() => {
+    ctx.fillStyle = C.soft; rr(ctx, P - 20, y, W - 2 * P + 40, 112, 22); ctx.fill();
+    text(ctx, "Разом з розмитненням", P + 8, y + 50, "700 29px " + BODY, C.ink);
+    text(ctx, "без ремонту", P + 8, y + 84, "500 22px " + BODY, C.muted);
+    text(ctx, fmt(v.sub1, true), W - P - 8, y + 72, "700 46px " + DISP, C.accent, "right");
+  });
+  y += 112 + 56;
+  // extras
+  const ex = EXTRA.filter(r => v[r.k]);
+  if (ex.length) { section("Додаткові витрати"); ex.forEach((r, i) => row(r.l, "", v[r.k], i === ex.length - 1)); y += 20; }
+  // total band (solid accent bar survives messenger compression better than a thin outline)
+  D(() => {
+    const bx = P - 20, bw = W - 2 * P + 40, bh = 170;
+    ctx.save(); rr(ctx, bx, y, bw, bh, 28); ctx.clip();
+    ctx.fillStyle = C.ink; ctx.fillRect(bx, y, bw, bh);
+    ctx.fillStyle = C.coral; ctx.fillRect(bx, y, 18, bh); ctx.restore();
+    text(ctx, "Загальна вартість у Києві", P + 20, y + 76, "700 30px " + BODY, C.white);
+    text(ctx, "без ремонту", P + 20, y + 114, "500 22px " + BODY, C.pale);
+    text(ctx, fmt(v.total, true), W - P - 16, y + 110, "700 70px " + DISP, C.coral, "right");
+  });
+  y += 170 + 60;
+  // contacts
+  const cs = S.contacts.split("\n").map(s => s.trim()).filter(Boolean);
+  if (cs.length) {
+    D(() => { ctx.fillStyle = C.line; ctx.fillRect(P, y - 24, W - 2 * P, 2); });
+    y += 20;
+    cs.forEach(c => {
+      const head = c.endsWith(":");
+      D(() => {
+        if (head) { ctx.font = "800 21px " + BODY; spacing(ctx, 2); ctx.fillStyle = C.accent; ctx.fillText(c.toUpperCase(), P, y); spacing(ctx, 0); }
+        else text(ctx, c, P, y, "600 27px " + BODY, C.ink);
+      });
+      y += head ? 44 : 40;
+    });
+  }
+  y += 10;
+  D(() => text(ctx, "Розрахунок орієнтовний: тарифи аукціону, логістики й курс можуть змінюватися.", P, y, "500 20px " + BODY, C.muted));
+  return y + 56;
+}
+
+let fontsReady = null;
+function loadFonts() {
+  if (!fontsReady) fontsReady = Promise.all(["700 40px Unbounded", "500 20px Manrope", "600 20px Manrope", "700 20px Manrope", "800 20px Manrope"]
+    .map(f => document.fonts.load(f, "Ціна $0123 Abc"))).catch(() => {});
+  return fontsReady;
+}
+async function draw() {
+  await loadFonts();
+  const cv = $("card"), ctx = cv.getContext("2d");
+  const h = Math.ceil(renderCard(ctx, true));
+  if (cv.height !== h) cv.height = h;
+  renderCard(ctx, false);
+}
+const cardBlob = () => new Promise((res, rej) => draw().then(() => $("card").toBlob(b => b ? res(b) : rej(new Error("no image")), "image/png"), rej));
+
+/* ---------- output: copy / save / share ---------- */
+const IN_CLAUDE = !!(window.claude && typeof window.claude.use === "function");
+let downloads = null;
+const say = (t, warn) => { const m = $("outMsg"); m.className = "msg" + (warn ? " warn" : ""); m.textContent = t; };
+const fileName = ext => "Colibri-" + (($("car").value.trim() || "prorahunok").replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-|-$/g, "")) + "." + ext;
+const canShareFiles = (() => { try { return !IN_CLAUDE && !!navigator.canShare && navigator.canShare({ files: [new File(["x"], "x.png", { type: "image/png" })] }); } catch (e) { return false; } })();
+if (canShareFiles) { $("png").textContent = "Надіслати PNG"; $("pdf").textContent = "Надіслати PDF"; }
+if (IN_CLAUDE) {
+  window.claude.use("downloads").then(d => {
+    downloads = d;
+    if (!d) { $("png").disabled = $("pdf").disabled = true; say("Збереження файлів недоступне в цьому вікні.", true); }
+  }).catch(() => {});
+}
+
+async function deliver(blob, name) {
+  if (IN_CLAUDE) {
+    if (!downloads) { say("Збереження файлів недоступне в цьому вікні.", true); return; }
+    try { await downloads.save({ filename: name, data: blob }); say("Збережено: " + name); }
+    catch (e) {
+      const code = e && e.code;
+      if (code === "declined") say("Збереження скасовано.");
+      else if (code === "rate_limited") say("Зачекайте секунду й спробуйте ще раз.", true);
+      else say("Не вдалося зберегти файл.", true);
+    }
+    return;
+  }
+  if (canShareFiles) {
+    try { await navigator.share({ files: [new File([blob], name, { type: blob.type })] }); return; }
+    catch (e) { if (e && e.name === "AbortError") return; }
+  }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+
+$("copy").addEventListener("click", () => {
+  const t = clientText(), fb = $("txtFallback");
+  const fallback = () => { fb.hidden = false; fb.value = t; fb.focus(); fb.select(); say("Текст виділено — натисніть «Копіювати»."); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(() => { fb.hidden = true; say("Текст скопійовано. Можна вставляти клієнту."); }, fallback);
+  else fallback();
+});
+$("copyImg").addEventListener("click", () => {
+  if (!navigator.clipboard || !navigator.clipboard.write || typeof ClipboardItem === "undefined") { say("Цей браузер не дає копіювати картинки. Скористайтесь кнопкою нижче.", true); return; }
+  navigator.clipboard.write([new ClipboardItem({ "image/png": cardBlob() })])
+    .then(() => say("Картинку скопійовано. Вставте її в чат клієнту."))
+    .catch(() => say("Не вдалося скопіювати картинку тут. Скористайтесь кнопкою PNG нижче.", true));
+});
+$("png").addEventListener("click", async () => { try { await deliver(await cardBlob(), fileName("png")); } catch (e) { say("Не вдалося створити картинку.", true); } });
+$("pdf").addEventListener("click", async () => {
+  if (!window.jspdf) { say("PDF-модуль не завантажився. Перевірте інтернет і оновіть сторінку.", true); return; }
+  await draw();
+  const cv = $("card"), w = cv.width / 2, h = cv.height / 2;
+  const doc = new window.jspdf.jsPDF({ unit: "pt", format: [w, h], orientation: h > w ? "portrait" : "landscape" });
+  doc.addImage(cv.toDataURL("image/png"), "PNG", 0, 0, w, h, undefined, "FAST");
+  await deliver(doc.output("blob"), fileName("pdf"));
+});
+$("toCard").addEventListener("click", () => $("previewBox").scrollIntoView({ behavior: "smooth", block: "start" }));
+
+/* ---------- images: photo & logo ---------- */
+function readImg(file, cb) {
+  const r = new FileReader();
+  r.onload = () => { const i = new Image(); i.onload = () => cb(i, r.result); i.src = r.result; };
+  r.readAsDataURL(file);
+}
+function setPhoto(img) { photoImg = img; $("photoClear").hidden = false; update(); }
+function clearPhoto(redraw) { photoImg = null; $("photo").value = ""; $("photoClear").hidden = true; if (redraw !== false) update(); }
+function loadLogo(src) { const i = new Image(); i.onload = () => { logoImg = i; update(); }; i.src = src; }
+
+$("photo").addEventListener("change", e => { const f = e.target.files[0]; if (f) readImg(f, setPhoto); });
+$("photoClear").addEventListener("click", () => clearPhoto());
+document.addEventListener("paste", e => {
+  const item = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith("image/"));
+  const file = item && item.getAsFile(); if (!file) return;
+  e.preventDefault();
+  if (!IN_CLAUDE && document.activeElement === $("ocrDrop")) { recognizeShots([file]); return; }
+  readImg(file, img => { setPhoto(img); $("linkMsg").className = "msg"; $("linkMsg").textContent = "Фото вставлено в картку."; });
+});
+$("logoFile").addEventListener("change", e => {
+  const f = e.target.files[0]; if (!f) return;
+  readImg(f, (img, url) => { logoImg = img; if (!store.set("ca_logo", url)) say("Логотип завеликий для збереження — він працюватиме до закриття сторінки.", true); update(); });
+});
+$("logoReset").addEventListener("click", () => { store.set("ca_logo", null); $("logoFile").value = ""; loadLogo(LOGO_SRC); });
+
+/* ---------- settings ---------- */
+function fillSettings() {
+  TEXT_KEYS.forEach(k => $("d_" + k).value = S[k]);
+  NUM_KEYS.forEach(k => $("d_" + k).value = show(S[k]));
+}
+let resetArm = null;
+$("resetSettings").addEventListener("click", () => {
+  const b = $("resetSettings");
+  const disarm = () => { resetArm = null; b.textContent = "Скинути до базових"; b.classList.remove("primary"); };
+  if (!resetArm) { b.textContent = "Точно скинути? Натисніть ще раз"; b.classList.add("primary"); resetArm = setTimeout(disarm, 5000); return; }
+  clearTimeout(resetArm); disarm();
+  S = Object.assign({}, DEF); saveSettings();
+  store.set("ca_logo", null); $("logoFile").value = ""; loadLogo(LOGO_SRC);
+  fillSettings(); setv("colibri", S.colibri); update();
+  $("resetMsg").textContent = "Готово: базові налаштування повернуто.";
+});
+
+/* ---------- wiring ---------- */
+document.addEventListener("input", e => {
+  const id = e.target.id || "";
+  if (id.startsWith("v_") || id === "car" || id === "vin") { e.target.closest(".money")?.classList.remove("doubt"); $("sampleTag").hidden = true; update(); return; }
+  if (id.startsWith("d_")) {
+    const k = id.slice(2);
+    S[k] = TEXT_KEYS.includes(k) ? e.target.value : num(e.target.value);
+    saveSettings(); update();
+  }
+});
+if (!IN_CLAUDE) {
+  $("ocrBox").hidden = false;
+  const drop = $("ocrDrop");
+  if (matchMedia("(pointer:coarse)").matches) $("ocrHint").textContent = "Виберіть скрін з логістики — цифри підставляться самі";
+  $("ocrFile").addEventListener("change", e => { recognizeShots(e.target.files); e.target.value = ""; });
+  drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("over"); });
+  drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+  drop.addEventListener("drop", e => { e.preventDefault(); drop.classList.remove("over"); recognizeShots(e.dataTransfer.files); });
+}
+let linkTimer = null;
+$("link").addEventListener("input", () => { clearTimeout(linkTimer); linkTimer = setTimeout(parseLink, 250); });
+$("reset").addEventListener("click", () => { newCalc(false); window.scrollTo({ top: 0, behavior: "smooth" }); });
+
+$("markImg").src = LOGO_SRC;
+fillSettings();
+newCalc(true);
+loadLogo(store.get("ca_logo", null) || LOGO_SRC);
+})();
+</script>
+</body>
+</html>
